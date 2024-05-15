@@ -68,6 +68,13 @@ Plans are to use soft-links where applicable.  It is desktop software, and only 
 
 Eventually it will have a live interface to CivitAI to download and monitor models.
 
+Note: This is my first 'major' Python project and I am learning as I go, there is a lot of non-pythonic code here.  
+There is a lot of repeated code that eventually needs to be moved to functions/classes/etc.  
+I have done similar things in different ways in various places of the program.  Sometimes because I learned something
+new/better, sometimes because I forgot I had done it before.  I am working on cleaning it up as I go.  
+Some code is documented, some is not.  I am working on that as well.  I am also working on adding more comments to 
+the code.
+
 
 <!-- ROADMAP -->
 ## Roadmap
