@@ -1,5 +1,0 @@
-Edit models
-Separate models from versions
-build deployment
-build model downloader
-github setup

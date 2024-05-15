@@ -10,13 +10,13 @@ import random
 
 
 def get_hash(model):
-    BUF_SIZE = 65536  # let's read stuff in 64kb chunks!
+    buff_size = 65536  # let's read stuff in 64kb chunks!
 
     sha256 = hashlib.sha256()
 
     with open(model, 'rb') as h:
         while True:
-            data = h.read(BUF_SIZE)
+            data = h.read(buff_size)
             if not data:
                 break
             sha256.update(data)
