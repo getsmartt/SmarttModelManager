@@ -1,8 +1,4 @@
 import sys
-
-sys.stdin.reconfigure(encoding='utf-8')
-sys.stdout.reconfigure(encoding='utf-8')
-
 import os
 from os.path import exists
 from pathlib import Path
@@ -29,17 +25,15 @@ from my_label import MyLabel
 from settings import SettingsDialog
 
 import logging
+sys.stdin.reconfigure(encoding='utf-8')
+sys.stdout.reconfigure(encoding='utf-8')
 logger = logging.getLogger("Main")
-
 sys.argv += ['-platform', 'windows:darkmode=2']
-
 basedir = os.path.dirname(__file__)
 
 db = QSqlDatabase("QSQLITE")
 db.setDatabaseName(os.path.join(basedir, "manager"))
 db.open()
-
-
 
 
 class MainForm(qtw.QMainWindow, Ui_w_main):  # must match form type!

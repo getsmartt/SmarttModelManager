@@ -74,7 +74,7 @@ class ImportForm(qtw.QMainWindow, Ui_w_import):  # must match form type!
         logging.getLogger().setLevel(logging.INFO)
 
         # log to file
-        fh = logging.FileHandler('import.log', mode='a', encoding='utf-8')
+        fh = logging.FileHandler('logs/import.log', mode='a', encoding='utf-8')
         fh.setLevel(logging.INFO)
         fh.setFormatter(
             logging.Formatter(
