@@ -4,7 +4,6 @@ from os.path import exists
 from pathlib import Path
 import mouse  # used to control resize
 import json
-
 from PySide6 import QtCore as qtc, QtCore, QtGui, QtWebEngineCore
 from PySide6 import QtWidgets as qtw
 from PySide6 import QtGui as qtg
