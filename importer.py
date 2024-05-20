@@ -20,6 +20,8 @@ from UI.import_window import Ui_w_import
 import my_logger
 import models, tags, versions, creators
 from mover import ProgressDialog
+from civitai import models
+from civitai import creators
 
 
 class WorkerSignals(qtc.QObject):
@@ -193,12 +195,14 @@ class ImportForm(qtw.QMainWindow, Ui_w_import):  # must match form type!
                 # use api to get version info by hash
                 hash_endpoint = f"https://civitai.com/api/v1/model-versions/by-hash/{model_hash}"
                 version_json = misc.fetch_json(hash_endpoint)
+                version = models.get_by_hash(model_hash)
                 load_path = str(Path(model_path) / model_file)
                 if not isinstance(version_json, dict):  # File no longer (or never was on civit)
                     logging.warning(
                         f"Unknown File - {model} Trying other methods to get info. Status returned: {version_json}")
                     load = False
                     # try -version.json
+                    user_file = ''
                     if exists(load_path + '-version.json'):
                         with open(load_path + '-version.json', errors="ignore") as user_file:
                             version_json = json.load(user_file)
@@ -217,26 +221,33 @@ class ImportForm(qtw.QMainWindow, Ui_w_import):  # must match form type!
                             load = True
                             logging.info("loaded civitai info")
 
+                    if load :
+                        version = models.get_modelVersion_from_file(user_file)
+
                     if load is True and version_json.get('id') == '':  # nothing on civit and nothing in the file system
                         version_json = 'empty'
 
                 if isinstance(version_json, dict):
                     # collect version Information
                     model_id = str(version_json.get('modelId'))  # Base Model ID
+                    model_id = version.modelId
                     version_id = str(version_json.get('id'))
+                    version_id = version.id
                     version_url = f"https://civitai.com/models/{model_id}?modelVersionId={version_id}"
                     version_files = version_json.get('files')  # list
-                    version_files = version_files[0] # dict
+                    version_files = version.files  # list
+                    version_files = version_files[0]  # dict
                     version_stats = version_json.get('stats')
+                    version_stats = version.stats
                     version_filename = version_files.get('name')  # probably should query this by hash?
-                    model_data = version_json.get('model')
+                    model_data = version_json.get('model', {})
+                    model_data = version.model  # dict
                     version_images = version_json.get('images')
-
-                    if model_data is None:
-                        model_data = version_json
+                    version_images = version.images
 
                     if not model_data.get('type') is None:  # use model type from Civit if available
                         model_type = model_data.get('type')
+
                     version_image = ""
                     for image in version_images:  # maybe add option to get additional images?
                         for items in image:
@@ -246,6 +257,8 @@ class ImportForm(qtw.QMainWindow, Ui_w_import):  # must match form type!
                     # pass modelId to https://civitai.com/api/v1/models/:modelId or parse json from above
                     model_endpoint = f"https://civitai.com/api/v1/models/{model_id}"
                     model_json = misc.fetch_json(model_endpoint)
+                    model = models.get_model(model_id)
+
                     version_localpath = str(
                         destination / model_type / model_id / version_id)  # append additional pathing information?
 
@@ -254,15 +267,19 @@ class ImportForm(qtw.QMainWindow, Ui_w_import):  # must match form type!
                         if exists(load_path + '.civit.full.info'):
                             with open(load_path + '.civit.full.info', errors="ignore") as user_file:
                                 model_json = json.load(user_file)
+                                model = models.get_model_from_file(user_file)
                                 logging.info("loaded civit.full.info")
                         # try .json
                         elif exists(load_path + '.json'):
                             with open(load_path + '.json', errors="ignore") as user_file:
                                 model_json = json.load(user_file)
+                                model = models.get_model_from_file(user_file)
                                 logging.info("loaded .json")
+
 
                     if isinstance(model_json, dict):
                         model_creators = model_json.get('creator')  # dict
+                        model_creators = model.creator  # dict
                         creator_id = model_creators.get('username')
                         model_source = f"https://civitai.com/models/{model_id}"
 
@@ -274,6 +291,7 @@ class ImportForm(qtw.QMainWindow, Ui_w_import):  # must match form type!
                                     model_tags = []
                                 model_tags = model_json.get('tags')
                             model_tags = model_json.get('tags')
+                            model_tags = model.tags
                         except:
                             model_tags = []
                     else:
@@ -282,11 +300,14 @@ class ImportForm(qtw.QMainWindow, Ui_w_import):  # must match form type!
                     # pass creator to https://civitai.com/api/v1/creators
                     creator_endpoint = f"https://civitai.com/api/v1/creators?query={creator_id}"
                     creator_json = misc.fetch_json(creator_endpoint)
+                    creator = creators.get(creator_id)
+
                     if isinstance(creator_json, dict):
                         creator_json = creator_json.get('items')  # list
                         if creator_json:
                             creator_json = creator_json[0]
                             creator_url = creator_json.get('link')
+                            creator_url = creator.link
                         else:
                             creator_json = {}
                             creator_url = ''
@@ -301,15 +322,15 @@ class ImportForm(qtw.QMainWindow, Ui_w_import):  # must match form type!
                         new_dir.mkdir(parents=True, exist_ok=True)
                         # Save to DB
                         # Save Model
-                        model_db = models.add_model(str(version_json.get('modelId')),
-                                                    model_data.get('name').title(),
-                                                    model_json.get('description'),
+                        model_db = models.add_model(str(version.modelId),
+                                                    model.name.title(),
+                                                    model.description,
                                                     model_type,
-                                                    model_json.get('nsfw'),
+                                                    model.nsfw,
                                                     '',
                                                     json.dumps(model_json),
                                                     model_source,
-                                                    model_creators.get('username'),
+                                                    creator_id,
                                                     datetime.datetime.now(),
                                                     '')
                         if model_db == 'Success':
@@ -318,32 +339,32 @@ class ImportForm(qtw.QMainWindow, Ui_w_import):  # must match form type!
                             logging.error(model_db)
 
                         # Save Version
-                        version_parameters = (str(version_json.get('id')),
-                                              version_json.get('name').title(),
-                                              version_json.get('description'),
-                                              str(version_json.get('modelId')),
-                                              version_json.get('createdAt'),
+                        version_parameters = (str(version.id),
+                                              version.name.title(),
+                                              version.description,
+                                              str(version.modelId),
+                                              version.createdAt,
                                               version_url,
-                                              json.dumps(version_json.get('trainedWords')),
+                                              json.dumps(version.trainedWords),
                                               model_hash,
-                                              version_stats.get('downloadCount'),
-                                              version_stats.get('ratingCount'),
-                                              version_stats.get('rating'),
-                                              version_json.get('updatedAt'),
-                                              version_json.get('baseModel'),
+                                              version_stats.get('downloadCount',0),
+                                              version_stats.get('ratingCount',0),
+                                              version_stats.get('rating',0),
+                                              version.updatedAt,
+                                              version.baseModel,
                                               json.dumps(version_json),
                                               '', '',
                                               version_localpath,
                                               version_filename,
                                               datetime.datetime.now(),
                                               version_files.get('name'),
-                                              version_json.get('status'),
+                                              version.status,
                                               '',
-                                              version_json.get('publishedAt'),
+                                              version.publishedAt,
                                               datetime.datetime.now(),
                                               '',
                                               '',
-                                              version_stats.get('thumbsUpCount'),
+                                              version_stats.get('thumbsUpCount',0),
                                               '',
                                               target_name,
                                               model_path)
@@ -353,14 +374,14 @@ class ImportForm(qtw.QMainWindow, Ui_w_import):  # must match form type!
                         else:
                             logging.error(version_db)
                         # Save Creator
-                        creator_parameters = (model_creators.get('username'),
-                                              model_creators.get('username'),
+                        creator_parameters = (creator_id,
+                                              creator_id,
                                               creator_url,
                                               model_creators.get('image'),
                                               json.dumps(creator_json))
                         creator_db = creators.add_creator(creator_parameters)
                         if creator_db == 'Success':
-                            logging.info(f"Model {model_creators.get('username')} added to DB")
+                            logging.info(f"Model {creator_id} added to DB")
                         else:
                             logging.error(creator_db)
                         # write tags and link to models

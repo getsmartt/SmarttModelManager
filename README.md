@@ -140,8 +140,9 @@ Project Link: [https://github.com/getsmartt/SmarttModelManager](https://github.c
 ## Acknowledgments
 
 * [Best-README-Template](https://github.com/othneildrew/Best-README-Template/tree/master)
-* []()
-* []()
+* [Civitai.com API Package](https://github.com/kopetri/civitai)
+* [A collection of .gitignore templates](https://github.com/github/gitignore/tree/main)
+* [Hands-on guides to Python GUI programming](https://www.pythonguis.com/pyside6/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
